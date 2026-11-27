@@ -1,0 +1,23 @@
+{
+  "skill": "rag-prototype-builder",
+  "should_trigger": [
+    "Build a RAG over the documents in ./docs so I can ask questions about them",
+    "I need a chatbot that answers questions from our policy PDFs and cites its sources",
+    "Set up retrieval-augmented generation for a folder of markdown and CSV files",
+    "Make a question answering app over these files where each user only sees their own folders"
+  ],
+  "paraphrased_should_trigger": [
+    "Can you put together something that lets me search our handbook and get answers with references?",
+    "I want an assistant grounded in my company's documents that says I don't know when the answer isn't there",
+    "Our document Q&A prototype misses paraphrased questions, add embeddings and hybrid search",
+    "Add evals with hit@k and MRR to my document retrieval prototype"
+  ],
+  "should_not_trigger": [
+    "What's the weather in San Francisco?",
+    "Write a Python function that reverses a linked list",
+    "Create a spreadsheet tracking my monthly budget",
+    "Build a general chatbot UI that talks to GPT with no documents",
+    "Explain how to fine-tune a language model on my dataset",
+    "Fix the CSS so the navbar is centered"
+  ]
+}

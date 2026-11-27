@@ -1,0 +1,9 @@
+{
+  "_comment": "Offline stub + keyword search on data/sample and data/questions.jsonl. Deterministic. A metric below its baseline fails CI. Update only on purpose: UPDATE_BASELINE=1 .venv/bin/python -m pytest tests/test_regression.py",
+  "n": 11,
+  "hit@k": 1.0,
+  "mrr": 1.0,
+  "citation_hit": 0.714,
+  "abstain_recall": 0.5,
+  "abstain_precision": 0.5
+}

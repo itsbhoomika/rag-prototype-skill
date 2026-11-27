@@ -1,0 +1,122 @@
+{
+  "summary": {
+    "should_trigger": "4/4",
+    "paraphrased_should_trigger": "3/4",
+    "should_not_trigger": "6/6",
+    "trigger_rate_relevant": 0.875
+  },
+  "rows": [
+    {
+      "group": "should_trigger",
+      "query": "Build a RAG over the documents in ./docs so I can ask questions about them",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "should_trigger",
+      "query": "I need a chatbot that answers questions from our policy PDFs and cites its sources",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "should_trigger",
+      "query": "Set up retrieval-augmented generation for a folder of markdown and CSV files",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "should_trigger",
+      "query": "Make a question answering app over these files where each user only sees their own folders",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "paraphrased_should_trigger",
+      "query": "Can you put together something that lets me search our handbook and get answers with references?",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "paraphrased_should_trigger",
+      "query": "I want an assistant grounded in my company's documents that says I don't know when the answer isn't there",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "paraphrased_should_trigger",
+      "query": "Our document Q&A prototype misses paraphrased questions, add embeddings and hybrid search",
+      "expected": true,
+      "triggered": true,
+      "ok": true,
+      "detail": "rag-prototype-builder"
+    },
+    {
+      "group": "paraphrased_should_trigger",
+      "query": "Add evals with hit@k and MRR to my document retrieval prototype",
+      "expected": true,
+      "triggered": false,
+      "ok": false,
+      "detail": "no skill; used ['Glob']"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "What's the weather in San Francisco?",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "Write a Python function that reverses a linked list",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "Create a spreadsheet tracking my monthly budget",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill; used ['Artifact', 'Artifact']"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "Build a general chatbot UI that talks to GPT with no documents",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "Explain how to fine-tune a language model on my dataset",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill"
+    },
+    {
+      "group": "should_not_trigger",
+      "query": "Fix the CSS so the navbar is centered",
+      "expected": false,
+      "triggered": false,
+      "ok": true,
+      "detail": "no skill; used ['Glob']"
+    }
+  ]
+}

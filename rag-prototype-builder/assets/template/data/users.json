@@ -1,0 +1,8 @@
+{
+  "_comment": "Fictional users. allowed_folders are top-level folders under the data folder. '*' = all folders.",
+  "users": {
+    "admin": {"role": "admin", "allowed_folders": ["*"]},
+    "alice": {"role": "support agent", "allowed_folders": ["policies", "support"]},
+    "bob":   {"role": "merchandiser", "allowed_folders": ["catalog"]}
+  }
+}

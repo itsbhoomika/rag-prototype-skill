@@ -1,0 +1,12 @@
+dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+.env
+# generated if the template is run in place
+rag-prototype-builder/assets/template/.venv/
+rag-prototype-builder/assets/template/.index/
+rag-prototype-builder/assets/template/logs/
+rag-prototype-builder/assets/template/eval_runs/

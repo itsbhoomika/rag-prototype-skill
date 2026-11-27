@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask the Documents</title>
+  <style>
+    :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --card:#fff; --line:#e7e5e4; --accent:#2563eb; --warn:#b45309; --warnbg:#fef3c7; --err:#b91c1c; --errbg:#fee2e2; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --card:#292524; --line:#44403c; --accent:#60a5fa; --warn:#fbbf24; --warnbg:#422006; --err:#fca5a5; --errbg:#450a0a; } }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+    main { max-width: 820px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    form { display:flex; gap:8px; flex-wrap:wrap; margin: 20px 0; }
+    select, input, button { font: inherit; padding: 10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); }
+    input { flex: 1 1 300px; min-width: 0; }
+    button { background: var(--accent); color: #fff; border: none; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-top:16px; }
+    .banner { padding:10px 12px; border-radius:8px; margin-top:12px; }
+    .warn { background:var(--warnbg); color:var(--warn); }
+    .error { background:var(--errbg); color:var(--err); }
+    .answer { white-space: pre-wrap; }
+    details { border-top:1px solid var(--line); padding:8px 0; }
+    summary { cursor:pointer; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 8px 0 0; font-size:.9rem; }
+    .tag { font-size:.75rem; padding:1px 6px; border-radius:6px; background:var(--accent); color:#fff; margin-left:6px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Ask the Documents</h1>
+  <div id="status" class="muted">Connecting…</div>
+  <div id="stub" class="banner warn" hidden>Test stub model in use (LLM_PROVIDER=offline). Answers are not from a real model.</div>
+
+  <form id="ask">
+    <select id="user" aria-label="User"></select>
+    <input id="question" placeholder="e.g. What is the return window for kayaks?" required maxlength="2000" aria-label="Question">
+    <button id="go" type="submit">Ask</button>
+  </form>
+
+  <div id="result"></div>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
