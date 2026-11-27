@@ -31,17 +31,10 @@ setup_check() {
 
 static_checks() {
   $PY -m compileall -q backend tests >/dev/null && echo "syntax OK" || return 1
-  # Secrets: no key-looking strings in project files, and .env never tracked by git.
-  if grep -rInE "sk-ant-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}" \
-       --exclude-dir=.venv --exclude-dir=.git --exclude=.env . ; then
-    echo "possible API key found in a project file"; return 1
-  fi
-  if git ls-files --error-unmatch .env >/dev/null 2>&1; then echo ".env is tracked by git"; return 1; fi
-  echo "no secrets found"
-  # Rules from CLAUDE.md that a grep can check.
-  if grep -n "innerHTML\s*=" frontend/*.js; then echo "innerHTML assignment in frontend"; return 1; fi
-  if grep -nE "src=\"https?://|href=\"https?://" frontend/*.html; then echo "external CDN in frontend"; return 1; fi
-  echo "rule checks OK"
+  # The skill's rule checker (copied in by scaffold.py): client filters, silent fallbacks, the
+  # citation guard, untrusted-text handling, innerHTML, CDNs, key-shaped strings, .env in git.
+  [ -f scripts/check_rules.py ] || { echo "scripts/check_rules.py is missing: re-copy it from the skill"; return 1; }
+  $PY scripts/check_rules.py .
 }
 
 live_smoke() {

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import filters_for, load_users
 from .config import Settings
-from .generate import SYSTEM_PROMPT, Answer, build_user_prompt, guard, label_map
+from .generate import SYSTEM_PROMPT, Answer, build_user_prompt, find_instructions, guard, label_map
 from .ingest import chunk_docs, load_corpus
 from .providers import LLM, Embedder, LLMRefusal
 from .search import Index, search
@@ -57,6 +57,7 @@ class RAG:
     def ask(self, question: str, user_id: str) -> dict:
         """Authorization happens here, on the server: user id -> allowed filters -> search."""
         filters = filters_for(self.users, user_id)
+        searched = self._searched_folders(filters)
         timings: dict[str, float] = {}
 
         t = time.perf_counter()
@@ -77,6 +78,7 @@ class RAG:
             timings["generate_ms"] = _ms(t)
 
         labels = label_map(hits)
+        flagged = [(lbl, h, q) for lbl, h in labels.items() if (q := find_instructions(h.chunk.text))]
         result = {
             "question": question,
             "user_id": user_id,
@@ -84,6 +86,13 @@ class RAG:
             "abstained": ans.abstained,
             "reason": ans.reason,
             "warnings": ans.warnings,
+            "numbers_checked": ans.numbers_checked,
+            "searched_folders": searched,
+            "unsearched_folders": self._unsearched_folders(searched),
+            "ignored_instructions": [
+                {"label": lbl, "source": h.chunk.source, "quote": q, "cited": lbl in ans.citations}
+                for lbl, h, q in flagged
+            ],
             "citations": [_hit_dict(lbl, labels[lbl]) for lbl in ans.citations],
             "retrieved": [_hit_dict(lbl, h) for lbl, h in labels.items()],
             "llm": self.llm.name,
@@ -93,6 +102,23 @@ class RAG:
         }
         self._trace(result)
         return result
+
+    def _searched_folders(self, filters: dict) -> list[str]:
+        """The folders this user's search covered, for the UI's access line."""
+        allowed = filters.get("folder", [])
+        indexed = {c.meta.get("folder", "") for c in self.index.chunks} - {""}
+        return sorted(indexed if "*" in allowed else indexed & set(allowed))
+
+    def _unsearched_folders(self, searched: list[str]) -> list[str]:
+        """Indexed folders this user can't search, so the UI can say what was left out.
+
+        This tells the user those folder names exist. If folder names are themselves sensitive,
+        set SHOW_UNSEARCHED_FOLDERS=0 and this returns nothing.
+        """
+        if not self.s.show_unsearched_folders:
+            return []
+        indexed = {c.meta.get("folder", "") for c in self.index.chunks} - {""}
+        return sorted(indexed - set(searched))
 
     def _relevance_gate(self, hits) -> str:
         if not hits:
@@ -105,18 +131,24 @@ class RAG:
         return ""
 
     def _trace(self, result: dict) -> None:
-        """One JSON line per request with ids and hashes, not passage text. Never breaks the request."""
+        """One JSON line per request with ids and hashes, not passage text. Never breaks the request.
+
+        Questions can contain personal data, so only a hash is kept unless the owner sets
+        LOG_QUESTIONS=1 (useful while debugging on non-sensitive data).
+        """
         try:
             self.s.log_dir.mkdir(parents=True, exist_ok=True)
             row = {
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "user_id": result["user_id"],
-                "question": result["question"],
+                "question_sha1": _sha1(result["question"]),
+                **({"question": result["question"]} if self.s.log_questions else {}),
                 "abstained": result["abstained"],
                 "reason": result["reason"],
                 "cited": [c["chunk_id"] for c in result["citations"]],
+                "flagged_instructions": [f["label"] for f in result["ignored_instructions"]],
                 "retrieved": [(r["chunk_id"], r["score"]) for r in result["retrieved"]],
-                "answer_sha1": hashlib.sha1(result["answer"].encode()).hexdigest()[:12],
+                "answer_sha1": _sha1(result["answer"]),
                 "llm": result["llm"],
                 "timings": result["timings"],
             }
@@ -130,6 +162,8 @@ def _hit_dict(label: str, hit) -> dict:
     return {
         "label": label,
         "chunk_id": hit.chunk.id,
+        "doc_id": hit.chunk.doc_id,
+        "position": int(hit.chunk.id.rsplit("::", 1)[1]),  # order of this chunk within its document
         "source": hit.chunk.source,
         "section": hit.chunk.meta.get("section", ""),
         "page": hit.chunk.meta.get("page"),
@@ -138,6 +172,10 @@ def _hit_dict(label: str, hit) -> dict:
         "bm25": None if hit.bm25 is None else round(hit.bm25, 3),
         "vector_sim": None if hit.vector_sim is None else round(hit.vector_sim, 3),
     }
+
+
+def _sha1(text: str) -> str:
+    return hashlib.sha1(text.encode()).hexdigest()[:12]
 
 
 def _ms(t0: float) -> float:

@@ -45,8 +45,14 @@ Request: `{"user_id": str (1–64), "question": str (1–2000)}`. The request mo
 
 Response fields:
 - `answer`, `abstained`, `reason`, `warnings[]`
-- `citations[]` and `retrieved[]`. Each item has `label`, `chunk_id`, `source`, `section`, `page`, `text`, `score`, `bm25`, `vector_sim`.
+- `numbers_checked`: numbers in the answer, each found in a cited passage by the guard (the UI's "every number found" line)
+- `searched_folders[]`: folders this user's search covered. `unsearched_folders[]`: indexed folders they can't search (empty when `SHOW_UNSEARCHED_FOLDERS=0`; see `authorization.md`)
+- `ignored_instructions[]`: retrieved passages that talk to the model, each `{label, source, quote, cited}` (see `generation-and-guardrails.md`)
+- `citations[]` and `retrieved[]`. Each item has `label`, `chunk_id`, `doc_id`, `position` (order within its document), `source`, `section`, `page`, `text`, `score`, `bm25`, `vector_sim`.
 - `llm`, `llm_is_test_stub`, `embedder`, `timings`
+
+## The page (Reader layout)
+One page, two panes. Left: the question, an access line built from `searched_folders` / `unsearched_folders`, a facts line (passages cited, `numbers_checked`), the answer with each `[P#]` turned into a marker, the instruction notice, and "Also searched, not used" collapsed. Right: the sources, rebuilt only from retrieved chunks in `position` order with gaps marked "not retrieved", the cited passage highlighted. Clicking a marker opens its passage, underlines the text before the marker and moves keyboard focus to the passage. On a phone the right pane is a bottom sheet (Escape or Close returns focus to the marker). Designed states: welcome, loading, answer, no answer, error, test mode, server down, nothing indexed. The page never fetches whole files: that would need its own permission-checked endpoint.
 
 Errors:
 - 403: unknown user

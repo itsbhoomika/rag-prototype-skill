@@ -10,7 +10,7 @@ Without the skill you have to explain chunking, citations, access control, promp
 
 ![The prototype answering with a citation](docs/screenshot-answer.png)
 
-*The bundled app answering as user `alice`, with a cited source and the passages it retrieved. The yellow banner shows that the labelled offline test stub is on, so no API key was needed.*
+*The bundled app answering as user `alice`: the answer on the left, its source on the right with the cited passage highlighted, a line saying which folders were searched, and a notice that one retrieved passage tried to give the model instructions. The yellow banner shows that the labelled offline test stub is on, so no API key was needed.*
 
 ## What you get
 - **A working app.** It has:
@@ -20,7 +20,8 @@ Without the skill you have to explain chunking, citations, access control, promp
   - cite-or-abstain answers, with a shape check and a check that every number comes from a cited passage
   - per-user folder rules applied inside search (the user picker is a simulation: there's no login)
   - prompt-injection defences
-- **Proof that it works.** 37 offline tests on their own fixtures (so they pass with your documents too), regression baselines for the fixtures and for your questions, a local `ci.sh` whose `--live` stage refuses the stub and fails on any failed item, and an eval CLI with `hit@k`, `MRR`, citation, abstention and judge metrics.
+  - a one-page Reader UI: the answer beside its sources, each marker opens and highlights its passage, an access line, a notice when a document tries to instruct the model, a phone bottom sheet, keyboard support and designed states for every case
+- **Proof that it works.** 57 offline tests on their own fixtures (so they pass with your documents too), regression baselines for the fixtures and for your questions, a local `ci.sh` whose `--live` stage refuses the stub and fails on any failed item, and an eval CLI with `hit@k`, `MRR`, citation, abstention and judge metrics, compared against a named baseline (`--compare baseline`) and graded by a separate judge model.
 - **A process.** A plan-before-code gate, milestone evidence and plain-language reporting, with a `project-manager` agent included.
 - **Guardrails checked by code.** `check_rules.py` fails the build if someone:
   - lets the client send filters

@@ -50,9 +50,17 @@ def test_validator_rejects_bad_skill(tmp_path):
 def test_scaffold_creates_project_with_real_names(tmp_path):
     files = scaffold.scaffold(tmp_path / "app")
     for f in [".env.example", ".gitignore", "README.md", ".claude/agents/project-manager.md",
-              "CLAUDE.md", "PLAN.md", "ci.sh", "backend/pipeline.py", "frontend/index.html", "data/users.json"]:
+              "CLAUDE.md", "PLAN.md", "ci.sh", "backend/pipeline.py", "frontend/index.html", "data/users.json",
+              "scripts/check_rules.py"]:
         assert f in files, f
     assert not any(f.startswith(("env.example", "gitignore", "dot-claude", "README.template")) for f in files)
+
+
+def test_scaffold_ships_the_same_rule_checker(tmp_path):
+    scaffold.scaffold(tmp_path / "app")
+    shipped = tmp_path / "app" / "scripts" / "check_rules.py"
+    assert shipped.read_text() == (SKILL / "scripts" / "check_rules.py").read_text()
+    assert "scripts/check_rules.py" in (tmp_path / "app" / "ci.sh").read_text()
 
 
 def test_scaffold_never_overwrites(tmp_path):

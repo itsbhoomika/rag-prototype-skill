@@ -140,7 +140,10 @@ def _offline_answer(user_prompt: str) -> str:
     if not best or best_score < 0.5:
         return json.dumps({"answer": "", "citations": [], "abstain": True, "reason": "offline stub: weak overlap"})
     label, body = best
-    first = re.split(r"(?<=[.!?])\s+", " ".join(body.split()))[0][:300]
+    lines = body.split("\n")
+    if len(lines) > 1 and not re.search(r"[.!?:;]", lines[0]):  # skip a markdown heading-path line
+        body = "\n".join(lines[1:])
+    first =re.split(r"(?<=[.!?])\s+", " ".join(body.split()))[0][:300]
     return json.dumps({"answer": f"{first} [{label}]", "citations": [label], "abstain": False, "reason": ""})
 
 

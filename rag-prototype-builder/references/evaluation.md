@@ -15,9 +15,11 @@ One JSON object per line:
 ## Run
 ```bash
 .venv/bin/python -m backend.cli eval --label baseline
-.venv/bin/python -m backend.cli eval --label hybrid --judge   # --judge adds LLM-graded correctness (costs calls)
+.venv/bin/python -m backend.cli eval --label hybrid --compare baseline --judge
 ```
-Each run saves its metrics and per-question rows in `eval_runs/`, so runs can be compared.
+Each run saves its metrics and per-question rows in `eval_runs/`. The delta column compares with the latest run by default; `--compare LABEL` compares with the latest run saved under that label, and fails if there is none (never a silent swap). Keep-or-drop decisions use `--compare baseline`.
+
+`--judge` adds LLM-graded correctness (costs calls). The judge is `JUDGE_PROVIDER` / `JUDGE_MODEL` in `.env`. Left blank it is the generator's own model, which tends to agree with itself: the run is printed and saved as `self_graded: true`, and a self-graded `judge_accuracy` should be reported as such.
 
 ## Metrics
 | Metric | Meaning | Measures |

@@ -3,9 +3,10 @@
     python -m backend.cli doctor [--require-real]        # check providers and keys
     python -m backend.cli ingest [data_dir]              # build the index
     python -m backend.cli ask "question" --user alice    # ask as a user
-    python -m backend.cli eval [--judge] [--label name] [--strict]
+    python -m backend.cli eval [--judge] [--label name] [--compare label] [--strict]
                                                          # run data/questions.jsonl; --strict exits 1
-                                                         # if any item fails or the set is empty
+                                                         # if any item fails or the set is empty;
+                                                         # --compare baseline diffs against that run
 """
 from __future__ import annotations
 
@@ -65,6 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     pe.add_argument("questions", nargs="?", default="data/questions.jsonl")
     pe.add_argument("--judge", action="store_true")
     pe.add_argument("--label", default="")
+    pe.add_argument("--compare", default="", help="label of the run to compare with (default: the latest run)")
     pe.add_argument("--strict", action="store_true", help="exit 1 if any item fails or there are no items")
     args = p.parse_args(argv)
 
@@ -86,7 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "eval":
         from .evaluate import run
 
-        summary = run(args.questions, judge=args.judge, label=args.label)
+        try:
+            summary = run(args.questions, judge=args.judge, label=args.label, compare=args.compare)
+        except FileNotFoundError as e:  # e.g. --compare names a run that doesn't exist
+            print(f"EVAL FAILED: {e}")
+            return 1
         if args.strict and (summary["n"] == 0 or summary["n_failed"] > 0):
             why = "no golden questions" if summary["n"] == 0 else f"{summary['n_failed']} of {summary['n']} items failed"
             print(f"STRICT EVAL FAILED: {why}")

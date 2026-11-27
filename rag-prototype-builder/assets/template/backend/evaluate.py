@@ -7,13 +7,16 @@ data/questions.jsonl, one object per line:
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import statistics
 import time
 from pathlib import Path
 
+from .config import Settings
 from .generate import parse_output
 from .pipeline import RAG
+from .providers import LLM
 
 RUNS_DIR = Path("eval_runs")
 JUDGE_SYSTEM = """You grade a RAG system's answer against an expected answer.
@@ -84,26 +87,65 @@ def judge_row(row: dict, item: dict, llm) -> None:
     row["judge_correct"] = verdict["correct"]
 
 
-def run(questions_path: str, judge: bool = False, label: str = "") -> dict:
+def judge_llm(settings: Settings) -> LLM:
+    """The judge is its own model: JUDGE_PROVIDER / JUDGE_MODEL, defaulting to the generator's provider.
+
+    A model grading its own answers tends to agree with itself, so when the judge is the same
+    model as the generator the run is flagged as self-graded (printed and saved), not hidden.
+    """
+    provider = (settings.judge_provider or settings.llm_provider).lower()
+    model = settings.judge_model if (settings.judge_provider or settings.judge_model) else settings.llm_model
+    return LLM(dataclasses.replace(settings, llm_provider=provider, llm_model=model))
+
+
+def _runs() -> list[Path]:
+    return sorted(RUNS_DIR.glob("*.json"), key=lambda p: (p.stat().st_mtime_ns, p.name))
+
+
+def find_comparison(compare: str = "") -> tuple[Path | None, dict]:
+    """compare="" -> the most recent run. compare=LABEL -> the most recent run saved with that label.
+
+    A named comparison that doesn't exist raises: comparing with some other run silently would
+    make the delta column lie.
+    """
+    runs = _runs()
+    if compare:
+        runs = [p for p in runs if json.loads(p.read_text()).get("label") == compare]
+        if not runs:
+            raise FileNotFoundError(f"No eval run labelled '{compare}' in {RUNS_DIR}/. "
+                                    f"Run: python -m backend.cli eval --label {compare}")
+    if not runs:
+        return None, {}
+    return runs[-1], json.loads(runs[-1].read_text())["summary"]
+
+
+def run(questions_path: str, judge: bool = False, label: str = "", compare: str = "") -> dict:
     items = [json.loads(l) for l in Path(questions_path).read_text().splitlines() if l.strip()]
+    prev_path, prev = find_comparison(compare)  # before running, so a bad --compare fails fast
     rag = RAG()
+    judge_model = judge_llm(rag.s) if judge else None
+    self_graded = bool(judge_model) and judge_model.name == rag.llm.name
     rows = []
     for item in items:
         row = score_item(item, rag.ask(item["question"], item.get("user_id", "admin")))
-        if judge:
-            judge_row(row, item, rag.llm)
+        if judge_model:
+            judge_row(row, item, judge_model)
         rows.append(row)
 
     summary = summarize(rows)
-    previous = sorted(RUNS_DIR.glob("*.json"))
-    prev = json.loads(previous[-1].read_text())["summary"] if previous else {}
     RUNS_DIR.mkdir(exist_ok=True)
     path = RUNS_DIR / f"{time.strftime('%Y%m%d-%H%M%S')}{'-' + label if label else ''}.json"
     path.write_text(json.dumps({"label": label, "llm": rag.llm.name, "embedder": rag.embedder.name,
+                                "judge": judge_model.name if judge_model else None, "self_graded": self_graded,
+                                "compared_with": prev_path.name if prev_path else None,
                                 "summary": summary, "rows": rows}, indent=2))
 
     stub = "  (TEST STUB LLM: scores are not quality)" if rag.llm.provider == "offline" else ""
     print(f"\nEval {questions_path} with {rag.llm.name}, {rag.embedder.name}{stub}\nSaved {path}")
+    print(f"Compared with: {prev_path.name if prev_path else 'nothing (first run)'}")
+    if judge_model:
+        print(f"Judge: {judge_model.name}" + ("  WARNING: same model as the generator (self-graded); "
+                                              "set JUDGE_PROVIDER/JUDGE_MODEL to a different model" if self_graded else ""))
     print(f"{'metric':<20}{'value':>8}{'prev':>8}{'delta':>8}")
     for key, val in summary.items():
         p = prev.get(key)
@@ -120,4 +162,6 @@ def run(questions_path: str, judge: bool = False, label: str = "") -> dict:
         print(f"  FAIL {r['id']}: {kind} | {r['question'][:60]}")
     print(f"{summary['n']} items: one item = {100 / max(summary['n'], 1):.0f} points on a rate.")
     summary["n_failed"] = len(fails)
+    summary["compared_with"] = prev_path.name if prev_path else None
+    summary["self_graded"] = self_graded
     return summary
