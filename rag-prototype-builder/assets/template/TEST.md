@@ -13,7 +13,7 @@ It works like a CI/CD pipeline: stages run in order, and the first failure stops
 | Stage | What it checks | Command it runs | Cost |
 |---|---|---|---|
 | 1. Setup | `.venv` exists and packages import | `python -c "import ..."` | free |
-| 2. Static checks | Python syntax; no API keys in files; `.env` not tracked by git; no `innerHTML =` and no external CDN in the frontend | `compileall`, `grep`, `git ls-files` | free |
+| 2. Static checks | Python syntax, then the project rules: no client-sent filters, no silent fallback to fake results, the citation guard is in place, passages stay untrusted, no `innerHTML` or CDN in the frontend, no API keys in files, `.env` not tracked by git | `compileall`, `scripts/check_rules.py` | free |
 | 3. Unit tests | Each part on its own: ingestion, chunking, authorization, citation guard, injection escaping, failures raise instead of faking | `pytest tests/test_pipeline.py` | free |
 | 4. API tests | The HTTP contract: response shape, 403 for unknown users, 422 if a client sends its own filters, 502 when a provider fails, frontend served and escaped | `pytest tests/test_api.py` | free |
 | 5. Regression tests | The golden questions still score at least as well as the saved baseline | `pytest tests/test_regression.py` | free |

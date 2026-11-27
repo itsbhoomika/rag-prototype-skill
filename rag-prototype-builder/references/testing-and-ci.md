@@ -9,7 +9,7 @@
 | Stage | Checks | Cost |
 |---|---|---|
 | 1. Setup | `.venv` exists, packages import | free |
-| 2. Static checks | syntax, no key-looking strings, `.env` not tracked, no `innerHTML =`, no CDN | free |
+| 2. Static checks | syntax, then `scripts/check_rules.py` (copied in by `scaffold.py`): client filters, silent fallbacks, the guard, untrusted-text rule, HTML sinks, CDN, key-looking strings, `.env` tracked | free |
 | 3. Unit tests | ingestion, chunking, authorization, guard, injection escaping, failures raise | free |
 | 4. API tests | response shape, 403, 422 for extra fields, 502 on provider failure, frontend escaped | free |
 | 5. Regression | fixture golden set scores at least `regression_baseline.json`; once `data/questions.jsonl` has items, the owner's set must score at least `data_baseline.json` (the first run saves it and shows as skipped) | free |

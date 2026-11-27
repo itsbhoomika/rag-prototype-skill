@@ -15,6 +15,9 @@
 | `"*"` in `allowed_folders` | all folders |
 | Forbidden-only match for a question | relevance gate abstains: "no passages you can access matched the question" |
 
+## What the UI may say about access
+`searched_folders` lists the folders this user's search covered. `unsearched_folders` lists the other indexed folders, so the page can say "catalog isn't searched". That tells the user those folder names exist. If folder names are sensitive (for example `layoffs-2027`), set `SHOW_UNSEARCHED_FOLDERS=0` and record the choice in `PLAN.md`. Neither field ever carries another user's rules or any document text.
+
 ## Prototype limit (always state it)
 **This is simulated identity, not access control against a real attacker.** The user id is taken on trust from the request, because there is no login: anyone who can reach the API can claim to be any user. The UI labels the picker as a simulation. Say this in the plan, the README and the final report. In production it comes from a verified session or token (SSO, JWT), and `filters_for()` stays the same. For a database-backed variant, add row-level security as a second layer (see `nextjs-supabase-variant.md`).
 

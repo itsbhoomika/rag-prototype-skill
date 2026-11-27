@@ -31,7 +31,9 @@ def test_ask_returns_contract(client):
     r = client.post("/api/ask", json={"user_id": "admin", "question": "What is the return window for kayaks?"})
     assert r.status_code == 200
     body = r.json()
-    assert {"answer", "abstained", "citations", "retrieved", "llm_is_test_stub"} <= set(body)
+    assert {"answer", "abstained", "citations", "retrieved", "llm_is_test_stub", "numbers_checked",
+            "searched_folders", "unsearched_folders", "ignored_instructions"} <= set(body)
+    assert {"doc_id", "position"} <= set(body["retrieved"][0])
 
 
 def test_unknown_user_gets_403(client):
@@ -55,7 +57,17 @@ def test_provider_failure_is_reported_not_faked(client, rag, monkeypatch):
 
     monkeypatch.setattr(rag.llm, "complete", broken)
     r = client.post("/api/ask", json={"user_id": "admin", "question": "What is the return window for kayaks?"})
-    assert r.status_code == 502 and "provider down" in r.json()["detail"]
+    assert r.status_code == 502 and "ConnectionError" in r.json()["detail"]
+
+
+def test_provider_error_details_stay_in_the_server_log(client, rag, monkeypatch, caplog):
+    def broken(*_a, **_k):
+        raise RuntimeError("401 for https://my-company.openai.azure.com/deployments/secret-name")
+
+    monkeypatch.setattr(rag.llm, "complete", broken)
+    r = client.post("/api/ask", json={"user_id": "admin", "question": "What is the return window for kayaks?"})
+    assert r.status_code == 502 and "my-company" not in r.text and "RuntimeError" in r.json()["detail"]
+    assert "my-company" in caplog.text  # the owner can still see the real cause
 
 
 def test_frontend_is_served_and_never_uses_innerhtml(client):

@@ -12,6 +12,7 @@ from a verified session (SSO/JWT) and keeps everything else the same.
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -23,6 +24,7 @@ from .auth import UnknownUser
 from .pipeline import RAG
 
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
+log = logging.getLogger("rag.api")
 
 
 # ---------------------------------------------------------------- API contract
@@ -36,6 +38,8 @@ class AskRequest(BaseModel):
 class Passage(BaseModel):
     label: str
     chunk_id: str
+    doc_id: str
+    position: int
     source: str
     section: str
     page: int | None
@@ -45,6 +49,13 @@ class Passage(BaseModel):
     vector_sim: float | None
 
 
+class FlaggedPassage(BaseModel):
+    label: str
+    source: str
+    quote: str                     # the sentence that looked like an instruction
+    cited: bool                    # whether the answer still cites this passage
+
+
 class AskResponse(BaseModel):
     question: str
     user_id: str
@@ -52,6 +63,10 @@ class AskResponse(BaseModel):
     abstained: bool
     reason: str
     warnings: list[str]
+    numbers_checked: int           # numbers in the answer, each found in a cited passage by the guard
+    searched_folders: list[str]    # folders this user's search covered
+    unsearched_folders: list[str]  # indexed folders this user can't search (empty if SHOW_UNSEARCHED_FOLDERS=0)
+    ignored_instructions: list[FlaggedPassage]  # retrieved passages that talk to the model
     citations: list[Passage]
     retrieved: list[Passage]       # only passages this user is allowed to see
     llm: str
@@ -102,7 +117,11 @@ def ask(req: AskRequest) -> dict:
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:  # provider/network failure: report it, never return a made-up answer
-        raise HTTPException(status_code=502, detail=f"{type(e).__name__}: {e}") from e
+        # The browser gets the error type; the full message (which can name endpoints, deployments
+        # or account details) goes to the server log only.
+        log.exception("ask failed for user %s", req.user_id)
+        raise HTTPException(status_code=502, detail=f"{type(e).__name__}: the model or embedding provider "
+                                                    "failed. Full details are in the server log.") from e
 
 
 @app.get("/")

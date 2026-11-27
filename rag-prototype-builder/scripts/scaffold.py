@@ -8,6 +8,8 @@ Usage:
 - Renames packaging-safe names back to their real names:
     README.template.md -> README.md, env.example -> .env.example,
     gitignore -> .gitignore, dot-claude/ -> .claude/
+- Copies scripts/check_rules.py into the project, so the project's own ./ci.sh runs the same
+  rule checks the skill uses (one source of truth, no weaker grep copy).
 - With sample data, data/ gets a copy of tests/fixtures (fictional docs, users, questions).
 - --no-sample leaves data/sample, data/questions.jsonl and data/users.json as empty
   placeholders, for when the owner brings their own documents.
@@ -20,6 +22,7 @@ import sys
 from pathlib import Path
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "template"
+RULES = Path(__file__).resolve().parent / "check_rules.py"
 RENAMES = {
     "README.template.md": "README.md",
     "env.example": ".env.example",
@@ -41,6 +44,8 @@ def scaffold(target: Path, sample: bool = True) -> list[str]:
         if (target / src).exists():
             (target / src).rename(target / dst)
     (target / "ci.sh").chmod(0o755)
+    (target / "scripts").mkdir(exist_ok=True)
+    shutil.copy(RULES, target / "scripts" / "check_rules.py")
 
     # data/ is the owner's. tests/fixtures/ is the test suite's and is never touched, so the
     # tests pass with or without the sample data.

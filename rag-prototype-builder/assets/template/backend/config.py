@@ -29,6 +29,10 @@ class Settings:
     top_k: int               # passages sent to the LLM
     candidates: int          # per-retriever candidates before fusion
     min_vector_sim: float    # relevance gate for vector search
+    judge_provider: str      # eval --judge: blank = same provider as LLM_PROVIDER (flagged as self-graded)
+    judge_model: str
+    show_unsearched_folders: bool  # UI may name folders the user can't search (reveals they exist)
+    log_questions: bool      # traces keep question text only when LOG_QUESTIONS=1 (otherwise a hash)
     claude_effort: str
     claude_fallbacks: bool
     data_dir: Path
@@ -48,6 +52,10 @@ class Settings:
             top_k=int(_env("TOP_K", "6")),
             candidates=int(_env("CANDIDATES", "30")),
             min_vector_sim=float(_env("MIN_VECTOR_SIM", "0.25")),
+            judge_provider=_env("JUDGE_PROVIDER", "").lower(),
+            judge_model=_env("JUDGE_MODEL", ""),
+            log_questions=_env("LOG_QUESTIONS", "0") == "1",
+            show_unsearched_folders=_env("SHOW_UNSEARCHED_FOLDERS", "1") == "1",
             claude_effort=_env("CLAUDE_EFFORT", "low"),
             claude_fallbacks=_env("CLAUDE_FALLBACKS", "1") == "1",
             data_dir=Path(_env("DATA_DIR", "data/sample")),

@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Claude Code (needs a file system, bash and Python 3.10+, with uv or pip). Network access is needed only for real model providers; the labelled offline test stub and all tests run without keys.
 metadata:
   author: itsbhoomika
-  version: 1.1.0
+  version: 1.2.0
   category: workflow-automation
   tags: [rag, retrieval, citations, evals, fastapi, prompt-injection, authorization]
   documentation: https://github.com/itsbhoomika/rag-prototype-skill
@@ -78,7 +78,7 @@ When the owner says it's approved, change the line to `Status: approved (owner, 
 | M3 | Hybrid embeddings, only if M2 shows retrieval misses | beats M2 on `hit@k` or `mrr` |
 | M4 | Reranking, only if the right passage is retrieved but ranked low | beats M3 on `mrr` |
 
-For each one: write the test first, make the smallest change, run `pytest` and `check_rules.py`, and run `eval` if retrieval, prompts or chunking changed. Compare runs on the same questions and the same `TOP_K`, and include `latency_p50_ms` in the keep-or-drop decision. Record the real output in the `PLAN.md` row.
+For each one: write the test first, make the smallest change, run `pytest` and `check_rules.py`, and run `eval` if retrieval, prompts or chunking changed. Compare runs with `eval --compare baseline` on the same questions and the same `TOP_K`, and include `latency_p50_ms` in the keep-or-drop decision. Record the real output in the `PLAN.md` row.
 
 **Gate per milestone:** tests green, rule check passed, evidence in `PLAN.md`.
 
@@ -88,7 +88,7 @@ For each one: write the test first, make the smallest change, run `pytest` and `
 Report, as separate measurements with item counts:
 - retrieval (`hit@k`, `mrr`)
 - citation support (`citation_hit`, grounding abstentions)
-- answer correctness (`judge_accuracy`, live only)
+- answer correctness (`judge_accuracy`, live only; say if the run was `self_graded`, and prefer a different `JUDGE_MODEL`)
 - abstention (`abstain_recall`, `abstain_precision`)
 
 Then list the trade-offs, the failure types and what isn't built, including simulated identity.
@@ -98,7 +98,7 @@ Then list the trade-offs, the failure types and what isn't built, including simu
 ## Path C: Improve an existing prototype
 1. Make sure a baseline eval exists. If not, run M1's eval first (rule 6).
 2. Make one change, for example `EMBED_PROVIDER` set by the owner in `.env`, then re-ingest.
-3. Run `eval --label NAME` and compare with the baseline on the same questions.
+3. Run `eval --label NAME --compare baseline` on the same questions.
 4. Keep the change only if a metric improved without a latency cost the owner rejects. Then update the baseline on purpose.
 
 **Gate:** the comparison table is in `PLAN.md`.
@@ -141,5 +141,5 @@ The full table is in `references/troubleshooting.md`.
 - `references/resources.md`: official skills and RAG docs
 
 ## Scripts
-- `scripts/scaffold.py PROJECT_DIR [--no-sample]`: copies `assets/template/` into an empty folder
+- `scripts/scaffold.py PROJECT_DIR [--no-sample]`: copies `assets/template/` into an empty folder, plus `check_rules.py` so the project's `./ci.sh` runs it
 - `scripts/check_rules.py PROJECT_DIR [--require-approved-plan]`: rule checks; exit 1 lists `file:line`

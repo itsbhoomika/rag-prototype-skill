@@ -30,6 +30,7 @@ class Answer:
     abstained: bool
     reason: str = ""
     warnings: list[str] = field(default_factory=list)
+    numbers_checked: int = 0             # distinct numbers in the answer, each found in a cited passage
 
 
 def label_map(hits: list[Hit]) -> dict[str, Hit]:
@@ -57,6 +58,28 @@ def parse_output(raw: str) -> dict | None:
 
 
 NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
+
+# Text in a document that addresses the model instead of the reader. A heuristic: it flags common
+# phrasings so the UI can say "this was treated as plain text". It is not the defence; the defence is
+# the passage wrapping plus the system-prompt rule, which apply to every passage whether flagged or not.
+INSTRUCTION = re.compile(
+    r"\b(ignore|disregard|forget|override)\b[^.!?\n]{0,40}\b(instructions?|prompts?|rules|guidelines)\b"
+    r"|\b(note|message|instructions?) (to|for) (the )?(ai|llm|assistant|model|language model)s?\b"
+    r"|\bai (systems?|assistants?|models?) reading this\b"
+    r"|\byou are now\b|\bnew instructions\b|\bsystem prompt\b|\breveal (all|your|the)\b",
+    re.I,
+)
+
+
+def find_instructions(text: str) -> str | None:
+    """Return the sentence that looks like an instruction to the model, or None."""
+    m = INSTRUCTION.search(text)
+    if not m:
+        return None
+    start = max(text.rfind(c, 0, m.start()) for c in ".!?\n") + 1
+    ends = [i for i in (text.find(c, m.end()) for c in ".!?\n") if i != -1]
+    sentence = text[start:(min(ends) + 1 if ends else len(text))].strip()
+    return sentence if len(sentence) <= 240 else sentence[:237] + "..."
 
 
 def _shape_error(data) -> str:
@@ -108,4 +131,4 @@ def guard(raw: str, hits: list[Hit]) -> Answer:
     if unsupported:
         return Answer("", [], True, f"answer has numbers not found in the cited passages: {', '.join(unsupported)}",
                       warnings + ["ungrounded number"])
-    return Answer(text, valid, False, "", warnings)
+    return Answer(text, valid, False, "", warnings, numbers_checked=len({n.replace(",", "") for n in answer_numbers}))
