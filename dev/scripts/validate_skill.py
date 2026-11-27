@@ -2,7 +2,7 @@
 """Validate a skill folder against the rules in "The Complete Guide to Building Skills for Claude".
 
 Usage:
-    python scripts/validate_skill.py [SKILL_DIR]      (default: rag-prototype-builder)
+    python dev/scripts/validate_skill.py [SKILL_DIR]      (default: rag-prototype-builder)
 
 Each check prints PASS/FAIL with the guide section it comes from. Exit code 1 on any FAIL.
 Needs PyYAML (pip install pyyaml).
@@ -33,7 +33,7 @@ def instruction_files(skill: Path) -> list[Path]:
 
 
 def main() -> int:
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parents[2]  # repo root (this file is dev/scripts/)
     skill = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else root / "rag-prototype-builder"
 
     # Technical requirements: file structure

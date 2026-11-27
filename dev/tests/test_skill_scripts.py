@@ -1,6 +1,6 @@
 """Deterministic tests for the skill's own scripts (no keys, no network).
 
-Run: python -m pytest -q   (needs pytest and pyyaml)
+Run from the repo root: python -m pytest -q dev/tests   (needs pytest and pyyaml)
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (this file is dev/tests/)
 SKILL = ROOT / "rag-prototype-builder"
 
 
@@ -28,7 +28,7 @@ rules = load(SKILL / "scripts" / "check_rules.py")
 
 # ---------------------------------------------------------------- validate_skill.py
 def test_skill_passes_guide_validation():
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "validate_skill.py"), str(SKILL)],
+    r = subprocess.run([sys.executable, str(ROOT / "dev" / "scripts" / "validate_skill.py"), str(SKILL)],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout
     assert "FAIL" not in r.stdout
@@ -39,7 +39,7 @@ def test_validator_rejects_bad_skill(tmp_path):
     bad.mkdir()
     (bad / "SKILL.md").write_text("---\nname: Bad Skill\ndescription: Helps with <projects>.\n---\nbody\n")
     (bad / "README.md").write_text("no")
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "validate_skill.py"), str(bad)],
+    r = subprocess.run([sys.executable, str(ROOT / "dev" / "scripts" / "validate_skill.py"), str(bad)],
                        capture_output=True, text=True)
     assert r.returncode == 1
     for expected in ["folder name", "README.md", "kebab-case", "Use when", "angle brackets"]:

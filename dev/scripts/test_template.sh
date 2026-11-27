@@ -2,7 +2,7 @@
 # Functional test: scaffold the template into a fresh temp folder, install it, and run its own CI.
 # Proves the bundled app works exactly as a user would get it. No API keys needed.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."   # repo root
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 python3 rag-prototype-builder/scripts/scaffold.py "$WORK/app" >/dev/null
 cd "$WORK/app"

@@ -41,7 +41,7 @@ mkdir -p ~/.claude/skills && cp -R rag-prototype-skill/rag-prototype-builder ~/.
 This installs the skill for all your projects. To install it for one project only, copy the folder into that project's `.claude/skills/` instead.
 
 ### Claude.ai
-1. Download `rag-prototype-builder.zip` from the latest Release, or build it with `./scripts/package.sh`.
+1. Download `rag-prototype-builder.zip` from the latest Release, or build it with `./dev/scripts/package.sh`.
 2. Open Claude.ai and go to **Settings > Capabilities > Skills**, then click **Upload skill** and pick the zip.
 3. Toggle the skill on.
 
@@ -76,26 +76,30 @@ rag-prototype-builder/          the skill (this folder is what gets installed or
   scripts/check_rules.py        deterministic rule checks (exit 1 + file:line on violation)
   assets/template/              the full tested app (backend, frontend, tests, CI, sample data)
   assets/supabase-schema.sql    pgvector schema for the Next.js + Supabase variant
-scripts/validate_skill.py       checks the skill against the skills guide's rules
-scripts/test_template.sh        scaffolds into a temp folder and runs the app's own CI
-scripts/package.sh              validates, then zips to dist/
-tests/                          tests for the skill's scripts
-evals/                          triggering tests (run via headless Claude Code) and functional scenarios
-CHECKLIST.md                    the guide's quick checklist, with evidence for each item
+dev/                            maintenance only: never installed
+  scripts/validate_skill.py     checks the skill against the skills guide's rules
+  scripts/test_template.sh      scaffolds into a temp folder and runs the app's own CI
+  scripts/package.sh            validates, then zips to dist/
+  tests/                        tests for the skill's scripts
+  evals/                        triggering tests (run via headless Claude Code) and functional scenarios
+  CHECKLIST.md                  the guide's quick checklist, with evidence for each item
+  CHANGELOG.md                  version history
+docs/                           screenshot for this README
 ```
 
 ## Develop
+All maintenance files live in `dev/`. Run these from the repo root:
 ```bash
-uv run --with pyyaml python scripts/validate_skill.py
+uv run --with pyyaml python dev/scripts/validate_skill.py
 ```
 ```bash
-uv run --with pytest --with pyyaml python -m pytest -q tests
+uv run --with pytest --with pyyaml python -m pytest -q dev/tests
 ```
 ```bash
-./scripts/test_template.sh
+./dev/scripts/test_template.sh
 ```
 ```bash
-python3 evals/run_trigger_tests.py
+python3 dev/evals/run_trigger_tests.py
 ```
 - The first command checks the skill's structure against the guide.
 - The second runs the tests for the skill's own scripts.
@@ -104,7 +108,7 @@ python3 evals/run_trigger_tests.py
 
 GitHub Actions runs the first three and packages the zip on every push.
 
-When you change the skill, bump `metadata.version` in `SKILL.md` and add a line to `CHANGELOG.md`.
+When you change the skill, bump `metadata.version` in `SKILL.md` and add a line to `dev/CHANGELOG.md`.
 
 ## Limits
 - The Next.js + Supabase variant is documented with a schema, but the schema hasn't been run against a live database by this repo's CI.

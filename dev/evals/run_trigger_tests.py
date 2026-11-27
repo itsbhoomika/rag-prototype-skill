@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Triggering tests (guide, chapter 3): does the skill load on relevant requests and stay quiet otherwise?
 
-Runs each query from evals/triggers.json through headless Claude Code (`claude -p`) in a temp
+Runs each query from dev/evals/triggers.json through headless Claude Code (`claude -p`) in a temp
 project that has only this skill installed in .claude/skills/. Tools that change anything are
 disallowed, and each run stops after its first turns, so a query only reveals whether the Skill
 tool was invoked. Uses your Claude Code login; roughly one short request per query.
 
-Usage: python evals/run_trigger_tests.py [--max-turns 2]
-Writes evals/results/triggers-YYYYMMDD-HHMM.json and prints a summary.
+Usage: python dev/evals/run_trigger_tests.py [--max-turns 2]
+Writes dev/evals/results/triggers-YYYYMMDD-HHMM.json and prints a summary.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import tempfile
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (this file is dev/evals/)
 SKILL = ROOT / "rag-prototype-builder"
 
 
@@ -57,7 +57,7 @@ def main() -> int:
     args = ap.parse_args()
     if not shutil.which("claude"):
         raise SystemExit("claude CLI not found: install Claude Code to run triggering tests")
-    spec = json.loads((ROOT / "evals" / "triggers.json").read_text())
+    spec = json.loads((ROOT / "dev" / "evals" / "triggers.json").read_text())
     rows = []
     with tempfile.TemporaryDirectory() as tmp:
         proj = Path(tmp)
@@ -75,7 +75,7 @@ def main() -> int:
     relevant = [r for r in rows if r["expected"]]
     summary["trigger_rate_relevant"] = round(sum(r["triggered"] for r in relevant) / len(relevant), 3)
     print("\nSummary:", json.dumps(summary))
-    out = ROOT / "evals" / "results" / f"triggers-{time.strftime('%Y%m%d-%H%M')}.json"
+    out = ROOT / "dev" / "evals" / "results" / f"triggers-{time.strftime('%Y%m%d-%H%M')}.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"summary": summary, "rows": rows}, indent=2))
     print(f"Saved {out.relative_to(ROOT)}")
