@@ -1,0 +1,23 @@
+name: skill-ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml pytest
+      - name: Validate skill against the guide
+        run: python dev/scripts/validate_skill.py
+      - name: Script tests
+        run: python -m pytest -q dev/tests
+      - name: Template functional test (scaffold + its own CI)
+        run: ./dev/scripts/test_template.sh
+      - name: Package
+        run: ./dev/scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rag-prototype-builder
+          path: dist/rag-prototype-builder.zip
