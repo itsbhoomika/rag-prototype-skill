@@ -21,10 +21,14 @@ Keep a unit test with an injection passage. It should check that the closing tag
 `parse_output` strips code fences, then tries the whole text, then the first `{...}` block. If nothing parses, the guard abstains with the reason "model output was not valid JSON" and a warning. An unparseable answer is never shown as if it were valid.
 
 ## Cite-or-abstain guard (`guard`)
-1. If the model abstained or gave an empty answer, the result is an abstention, with the model's reason.
-2. Claimed citations are the `citations` list plus any `[P#]` in the answer text.
-3. Labels that weren't retrieved are dropped, with a warning such as "dropped invalid citation P7".
-4. If no valid citation is left, the result is an abstention with the reason "answer had no valid citation".
+1. **Shape check.** The output must be an object with `answer` (string), `citations` (list of strings), `abstain` (boolean) and `reason` (string). Anything else abstains with "model output had the wrong shape: ...". It never crashes.
+2. If the model abstained or gave an empty answer, the result is an abstention, with the model's reason.
+3. Claimed citations are the `citations` list plus any `[P#]` in the answer text.
+4. Labels that weren't retrieved are dropped, with a warning such as "dropped invalid citation P7".
+5. If no valid citation is left, the result is an abstention with the reason "answer had no valid citation".
+6. **Grounding check.** Every number in the answer (prices, days, percentages, dates) must appear in a cited passage. If not, the answer abstains with "answer has numbers not found in the cited passages: 9,999". This catches the most damaging fabrication, a wrong number with a real citation.
+
+What the guard still can't check: whether the *wording* of a claim is supported (for example "can be returned" vs "cannot be returned"). That needs `eval --judge` in `./ci.sh --live`. Known false abstention: a passage writes "five" and the answer writes "5". The system prompt tells the model to copy numbers exactly.
 
 Never loosen this to raise `citation_hit` (rule 4). If valid answers abstain, fix retrieval, chunking or the prompt.
 

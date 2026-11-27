@@ -69,6 +69,16 @@ def test_scaffold_no_sample(tmp_path):
     scaffold.scaffold(tmp_path / "app", sample=False)
     assert list((tmp_path / "app" / "data" / "sample").iterdir()) == []
     assert (tmp_path / "app" / "data" / "users.json").read_text().strip() == '{"users": {}}'
+    # the test suite's own data survives, so ./ci.sh still passes with no sample (bug found in review)
+    fixtures = tmp_path / "app" / "tests" / "fixtures"
+    assert len(list((fixtures / "docs").rglob("*.*"))) == 4 and (fixtures / "questions.jsonl").read_text()
+
+
+def test_scaffold_sample_copies_fixtures_into_data(tmp_path):
+    scaffold.scaffold(tmp_path / "app")
+    app = tmp_path / "app"
+    assert (app / "data" / "sample" / "policies" / "returns.md").exists()
+    assert (app / "data" / "questions.jsonl").read_text() == (app / "tests" / "fixtures" / "questions.jsonl").read_text()
 
 
 def test_template_has_no_env_file():
@@ -90,7 +100,7 @@ def test_rules_require_approved_plan(project):
     v = rules.check(project, require_approved=True)
     assert any("must be 'approved'" in x for x in v)
     plan = project / "PLAN.md"
-    plan.write_text(plan.read_text().replace("Status: draft", "Status: approved"))
+    plan.write_text(plan.read_text().replace("Status: draft", "Status: approved (owner, in chat, 2026-11-26)"))
     assert rules.check(project, require_approved=True) == []
 
 

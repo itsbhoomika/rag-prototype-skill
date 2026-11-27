@@ -17,10 +17,10 @@ Without the skill you have to explain chunking, citations, access control, promp
   - a FastAPI backend and a one-page UI (no build step, no CDN)
   - ingestion for md, txt, pdf, csv, json and html
   - BM25 search, with embeddings and RRF hybrid search when you turn them on
-  - cite-or-abstain answers
-  - per-user access control applied before search
+  - cite-or-abstain answers, with a shape check and a check that every number comes from a cited passage
+  - per-user folder rules applied inside search (the user picker is a simulation: there's no login)
   - prompt-injection defences
-- **Proof that it works.** 26 offline tests, a regression baseline, a local `ci.sh`, and an eval CLI with `hit@k`, `MRR`, citation and abstention metrics.
+- **Proof that it works.** 37 offline tests on their own fixtures (so they pass with your documents too), regression baselines for the fixtures and for your questions, a local `ci.sh` whose `--live` stage refuses the stub and fails on any failed item, and an eval CLI with `hit@k`, `MRR`, citation, abstention and judge metrics.
 - **A process.** A plan-before-code gate, milestone evidence and plain-language reporting, with a `project-manager` agent included.
 - **Guardrails checked by code.** `check_rules.py` fails the build if someone:
   - lets the client send filters
@@ -112,7 +112,9 @@ When you change the skill, bump `metadata.version` in `SKILL.md` and add a line 
 
 ## Limits
 - The Next.js + Supabase variant is documented with a schema, but the schema hasn't been run against a live database by this repo's CI.
-- There is no real login. The app uses a user picker, and authorization is enforced on the server. Production would take the user id from SSO/JWT.
+- There is no real login. The user picker is a **simulation**: anyone who can reach the API can claim any user id. Folder rules are enforced on the server; production would take the user id from SSO/JWT.
+- BM25 word statistics are computed over the whole corpus, so forbidden documents slightly shift the ranking of allowed ones (no content leaks). Strict isolation needs one index per access group.
+- The guard checks numbers against the cited passages, not wording. Wording needs `eval --judge` with a real model.
 - Offline CI measures plumbing and search, not answer quality. Run `./ci.sh --live` in a generated project with real keys for quality.
 
 ## License

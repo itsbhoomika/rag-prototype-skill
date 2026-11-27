@@ -8,6 +8,7 @@ Usage:
 - Renames packaging-safe names back to their real names:
     README.template.md -> README.md, env.example -> .env.example,
     gitignore -> .gitignore, dot-claude/ -> .claude/
+- With sample data, data/ gets a copy of tests/fixtures (fictional docs, users, questions).
 - --no-sample leaves data/sample, data/questions.jsonl and data/users.json as empty
   placeholders, for when the owner brings their own documents.
 """
@@ -41,11 +42,18 @@ def scaffold(target: Path, sample: bool = True) -> list[str]:
             (target / src).rename(target / dst)
     (target / "ci.sh").chmod(0o755)
 
-    if not sample:
-        shutil.rmtree(target / "data" / "sample")
-        (target / "data" / "sample").mkdir()
-        (target / "data" / "questions.jsonl").write_text("")
-        (target / "data" / "users.json").write_text('{"users": {}}\n')
+    # data/ is the owner's. tests/fixtures/ is the test suite's and is never touched, so the
+    # tests pass with or without the sample data.
+    data, fixtures = target / "data", target / "tests" / "fixtures"
+    data.mkdir(exist_ok=True)
+    if sample:
+        shutil.copytree(fixtures / "docs", data / "sample")
+        shutil.copy(fixtures / "users.json", data / "users.json")
+        shutil.copy(fixtures / "questions.jsonl", data / "questions.jsonl")
+    else:
+        (data / "sample").mkdir()
+        (data / "questions.jsonl").write_text("")
+        (data / "users.json").write_text('{"users": {}}\n')
 
     return sorted(str(p.relative_to(target)) for p in target.rglob("*") if p.is_file())
 

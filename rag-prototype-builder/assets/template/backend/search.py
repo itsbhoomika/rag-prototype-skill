@@ -2,8 +2,11 @@
 
 Basic retrieval is BM25 keyword search. Vector search is added on top only when
 EMBED_PROVIDER is set (then results are fused with reciprocal rank fusion).
-The authorization filter is applied BEFORE scoring: a chunk the user may not see
-is never scored, so it can never be returned.
+The authorization mask is applied inside each ranking, before any top-k cut: a chunk the
+user may not see is never returned and never takes a result slot. Precisely: BM25 skips it,
+and dense search scores every vector but sets forbidden ones to -inf before ranking. BM25
+IDF/avgdl use the whole corpus (a ranking side effect, not a content leak; strict isolation
+needs one index per access group). See the skill's references/retrieval.md.
 """
 from __future__ import annotations
 

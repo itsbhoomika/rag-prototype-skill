@@ -45,8 +45,9 @@ static_checks() {
 }
 
 live_smoke() {
-  $PY -m backend.cli doctor || return 1
-  $PY -m backend.cli ingest >/dev/null && $PY -m backend.cli eval --label ci-live
+  # A live check must use a real model and must fail when golden items fail.
+  $PY -m backend.cli doctor --require-real || return 1
+  $PY -m backend.cli ingest >/dev/null && $PY -m backend.cli eval --label ci-live --strict
 }
 
 stage "1. Setup"              setup_check

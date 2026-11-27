@@ -8,7 +8,7 @@ All settings live in `.env`. The owner fills it in from `.env.example`. Never re
 | `anthropic` | `claude-opus-5-5` | `ANTHROPIC_API_KEY` |
 | `openai` | `gpt-4.1-mini` | `OPENAI_API_KEY` |
 | `azure` | the deployment name | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` |
-| `gemini` | `gemini-2.5-flash` (via the OpenAI-compatible endpoint) | `GEMINI_API_KEY` |
+| `gemini` | `gemini-3.5-flash` (via the OpenAI-compatible endpoint; 2.5-flash is deprecated) | `GEMINI_API_KEY` |
 | `ollama` | `llama3.2:3b` | a local Ollama at `OLLAMA_BASE_URL` |
 | `offline` | `extractive-stub` | nothing. A **test stub**, labelled `llm_is_test_stub: true` in the API, CLI and UI |
 

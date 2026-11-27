@@ -5,7 +5,7 @@ One JSON object per line:
 ```json
 {"id": "q1", "question": "What is the return window for kayaks?", "answerable": true, "user_id": "admin", "expected_sources": ["returns.md"], "expected_answer": "30 days from delivery"}
 ```
-- `expected_sources` matches against chunk ids by substring (file name or `file::n`).
+- `expected_sources` matches against chunk ids by substring (file name or `file::n`). A file name is coarse: it passes if any chunk of that file is cited. For exact evidence use the chunk id (`returns.md::2`) once chunking is settled.
 - Include, for a brief, roughly 10–30 questions:
   - answerable questions across every file type
   - paraphrased questions (to test whether embeddings are needed)
@@ -27,7 +27,7 @@ Each run saves its metrics and per-question rows in `eval_runs/`, so runs can be
 | `citation_hit` | the answer cites an expected source | end to end, grounded answers |
 | `abstain_recall` | share of unanswerable questions that abstained | safety: doesn't make things up |
 | `abstain_precision` | share of abstentions that were truly unanswerable | usefulness: doesn't over-abstain |
-| `judge_accuracy` | LLM judge says the answer matches `expected_answer` | answer correctness (live only) |
+| `judge_accuracy` | correct answers out of answerable questions with an `expected_answer`. An abstention counts as incorrect | answer correctness (live only) |
 | `latency_p50_ms` | median request time | cost and UX |
 
 Always report the item count with a metric. "hit@k 1.0 on 11 questions" isn't the same as on 200.

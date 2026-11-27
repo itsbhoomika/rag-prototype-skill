@@ -56,20 +56,56 @@ def parse_output(raw: str) -> dict | None:
     return None
 
 
+NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def _shape_error(data) -> str:
+    """The output must be {"answer": str, "citations": [str], "abstain": bool, "reason": str}."""
+    if not isinstance(data, dict):
+        return f"expected a JSON object, got {type(data).__name__}"
+    for key, kind in (("answer", str), ("reason", str), ("abstain", bool)):
+        if data.get(key) is not None and not isinstance(data[key], kind):
+            return f"'{key}' must be {kind.__name__}"
+    cites = data.get("citations")
+    if cites is not None and not (isinstance(cites, list) and all(isinstance(c, str) for c in cites)):
+        return "'citations' must be a list of strings"
+    return ""
+
+
+def _numbers(text: str) -> set[str]:  # normalised: commas removed, citation labels ignored
+    return {n.replace(",", "") for n in NUMBER.findall(re.sub(r"\[P\d+\]", "", text))}
+
+
 def guard(raw: str, hits: list[Hit]) -> Answer:
-    """Keep only citations that point at retrieved passages. No valid citation -> abstain."""
+    """Cite or abstain.
+
+    1. Output must be valid JSON of the right shape.
+    2. Only citations of retrieved passages count; no valid citation -> abstain.
+    3. Grounding check: every number in the answer must appear in a cited passage. This is a
+       deterministic proxy for "the cited passage supports the claim" that catches invented
+       prices, dates and limits. It does not check wording; that needs ./ci.sh --live with --judge.
+    """
     labels = label_map(hits)
     data = parse_output(raw)
     if data is None:
         return Answer("", [], True, "model output was not valid JSON", ["unparseable model output"])
+    if err := _shape_error(data):
+        return Answer("", [], True, f"model output had the wrong shape: {err}", ["malformed model output"])
 
-    text = str(data.get("answer") or "").strip()
+    text = (data.get("answer") or "").strip()
     if data.get("abstain") or not text:
-        return Answer("", [], True, str(data.get("reason") or "not in the provided passages"))
+        return Answer("", [], True, data.get("reason") or "not in the provided passages")
 
-    claimed = set(map(str, data.get("citations") or [])) | set(re.findall(r"\[(P\d+)\]", text))
+    claimed = set(data.get("citations") or []) | set(re.findall(r"\[(P\d+)\]", text))
     valid = sorted((c for c in claimed if c in labels), key=lambda c: int(c[1:]))
     warnings = [f"dropped invalid citation {c}" for c in sorted(claimed - set(valid))]
     if not valid:
         return Answer("", [], True, "answer had no valid citation", warnings)
+
+    cited_numbers = set().union(*(_numbers(labels[c].chunk.text) for c in valid))
+    answer_numbers = NUMBER.findall(re.sub(r"\[P\d+\]", "", text))
+    unsupported = list(dict.fromkeys(n for n in answer_numbers if n.replace(",", "") not in cited_numbers))
+    if unsupported:
+        return Answer("", [], True, f"answer has numbers not found in the cited passages: {', '.join(unsupported)}",
+                      warnings + ["ungrounded number"])
     return Answer(text, valid, False, "", warnings)

@@ -34,8 +34,9 @@
   <div id="status" class="muted">Connecting…</div>
   <div id="stub" class="banner warn" hidden>Test stub model in use (LLM_PROVIDER=offline). Answers are not from a real model.</div>
 
+  <p class="muted">Simulated user: there is no login, so pick who you are. The server applies that user's folder rules.</p>
   <form id="ask">
-    <select id="user" aria-label="User"></select>
+    <select id="user" aria-label="Simulated user"></select>
     <input id="question" placeholder="e.g. What is the return window for kayaks?" required maxlength="2000" aria-label="Question">
     <button id="go" type="submit">Ask</button>
   </form>

@@ -85,6 +85,32 @@ def test_guard_abstains_on_unparseable_output():
     assert guard("Sure! The answer is 42.", hits).abstained
 
 
+@pytest.mark.parametrize("raw", [
+    '[1, 2]',
+    '"hello"',
+    '{"answer": "ok [P1]", "citations": 5, "abstain": false}',
+    '{"answer": ["ok [P1]"], "citations": ["P1"], "abstain": false}',
+    '{"answer": "ok [P1]", "citations": ["P1"], "abstain": "no"}',
+])
+def test_guard_abstains_on_wrong_shape_instead_of_crashing(raw):
+    hits = [Hit(Chunk("a::0", "a", "a.md", "ok", {}), 1.0)]
+    out = guard(raw, hits)
+    assert out.abstained and "wrong shape" in out.reason
+
+
+def test_guard_rejects_number_not_in_cited_passage():
+    hits = [Hit(Chunk("a::0", "a", "returns.md", "Kayaks can be returned within 30 days.", {}), 1.0)]
+    out = guard('{"answer": "Kayaks cost $9,999 and can be returned within 30 days [P1].",'
+                ' "citations": ["P1"], "abstain": false}', hits)
+    assert out.abstained and "9,999" in out.reason
+
+
+def test_guard_accepts_numbers_copied_from_cited_passage():
+    hits = [Hit(Chunk("a::0", "a", "p.csv", "name: Trailfinder 7 GPS; price: 249.00 USD", {}), 1.0)]
+    out = guard('{"answer": "It costs 249.00 USD [P1].", "citations": ["P1"], "abstain": false}', hits)
+    assert not out.abstained and out.citations == ["P1"]
+
+
 # ---------------------------------------------------------------- no silent fakes
 def test_stub_is_labelled(rag):
     assert rag.ask("How long do refunds take?", "admin")["llm_is_test_stub"] is True
@@ -123,7 +149,51 @@ def test_index_built_with_other_embedder_is_refused(env, monkeypatch):
 def test_eval_runs_and_saves(rag, tmp_path, monkeypatch):
     from backend.evaluate import run
 
-    questions = Path(__file__).resolve().parents[1] / "data" / "questions.jsonl"
+    questions = Path(__file__).resolve().parent / "fixtures" / "questions.jsonl"
     monkeypatch.chdir(tmp_path)
     summary = run(str(questions), label="smoke")
     assert summary["n"] == 11 and list((tmp_path / "eval_runs").glob("*-smoke.json"))
+
+
+# ---------------------------------------------------------------- honest live checks
+def test_doctor_require_real_rejects_the_stub(env, capsys):
+    from backend.cli import main
+
+    assert main(["doctor", "--require-real"]) == 1
+    assert "needs a real model" in capsys.readouterr().out
+
+
+def test_strict_eval_fails_when_items_fail(rag, tmp_path, monkeypatch):
+    from backend.cli import main
+
+    questions = Path(__file__).resolve().parent / "fixtures" / "questions.jsonl"
+    monkeypatch.chdir(tmp_path)
+    assert main(["eval", str(questions), "--strict"]) == 1  # the stub fails some fixture items
+
+
+def test_strict_eval_fails_on_empty_question_set(rag, tmp_path, monkeypatch):
+    from backend.cli import main
+
+    (tmp_path / "empty.jsonl").write_text("")
+    monkeypatch.chdir(tmp_path)
+    assert main(["eval", str(tmp_path / "empty.jsonl"), "--strict"]) == 1
+
+
+def test_judge_counts_abstention_on_answerable_question_as_incorrect():
+    from backend.evaluate import judge_row, summarize
+
+    class FakeJudge:
+        calls = 0
+
+        def complete(self, system, prompt):
+            FakeJudge.calls += 1
+            return '{"correct": true, "why": "same facts"}'
+
+    base = {"hit": True, "rr": 1.0, "cited_expected": True, "latency_ms": 1.0}
+    answered = {**base, "answerable": True, "abstained": False, "answer": "30 days [P1]"}
+    abstained = {**base, "answerable": True, "abstained": True, "answer": ""}
+    item = {"question": "q", "expected_answer": "30 days"}
+    judge_row(answered, item, FakeJudge())
+    judge_row(abstained, item, FakeJudge())
+    assert FakeJudge.calls == 1 and abstained["judge_correct"] is False
+    assert summarize([answered, abstained])["judge_accuracy"] == 0.5

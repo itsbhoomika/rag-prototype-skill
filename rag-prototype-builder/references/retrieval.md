@@ -10,12 +10,14 @@ Record every step as an eval run with a label (`baseline`, `hybrid`, `rerank`). 
 ## Filter before scoring
 `allowed_mask(index, filters)` returns a boolean mask over all chunks. It is built from the server-side filters (`{"folder": [...]}`, where `"*"` means all).
 
-BM25 and cosine scoring run **only on masked-in chunks**, so a forbidden chunk can never:
-- appear in the results
-- reach the prompt
-- influence the ranking
+The mask is applied inside each ranking, before any top-k cut. What that guarantees, exactly:
+- A forbidden chunk never appears in the results, never reaches the prompt and never takes a slot in the top k.
+- BM25 adds term scores only for masked-in chunks.
+- Dense search computes the dot product for every vector, then sets forbidden ones to minus infinity before ranking. The forbidden scores are discarded, never returned or logged.
 
-Filtering a top-k list after retrieval is wrong. It leaks through scores and timing, and it returns fewer than k results.
+What it does **not** guarantee: BM25 word statistics (IDF and average length) come from the whole corpus, so forbidden documents slightly shift the scores of allowed ones. That is a ranking side effect, not a content leak, and it is fine for a prototype. Strict isolation needs one index per access group (or per-group statistics).
+
+Filtering a top-k list after retrieval is wrong. It returns fewer than k results, and the forbidden passages have already been ranked and may get logged.
 
 ## BM25
 Standard Okapi BM25 (`k1=1.5`, `b=0.75`) over lowercase word tokens. Postings are built at ingest and saved in `.index/`.

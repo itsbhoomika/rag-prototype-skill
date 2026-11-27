@@ -1,7 +1,7 @@
 # PLAN
 
 Status: draft
-<!-- The owner changes this to "approved" before feature work starts. The project-manager agent fills in the sections. -->
+<!-- Becomes "approved (owner, in chat, DATE)" when the owner approves. Keep the plan to one screen. -->
 
 ## Goal
 

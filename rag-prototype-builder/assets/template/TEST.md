@@ -17,7 +17,7 @@ It works like a CI/CD pipeline: stages run in order, and the first failure stops
 | 3. Unit tests | Each part on its own: ingestion, chunking, authorization, citation guard, injection escaping, failures raise instead of faking | `pytest tests/test_pipeline.py` | free |
 | 4. API tests | The HTTP contract: response shape, 403 for unknown users, 422 if a client sends its own filters, 502 when a provider fails, frontend served and escaped | `pytest tests/test_api.py` | free |
 | 5. Regression tests | The golden questions still score at least as well as the saved baseline | `pytest tests/test_regression.py` | free |
-| 6. Live eval (optional) | The real model and embeddings from `.env` work end to end, and real answer quality | `./ci.sh --live` | API calls |
+| 6. Live eval (optional) | A real model (the stub is refused) and embeddings from `.env` work end to end, and every golden item passes | `./ci.sh --live` | API calls |
 
 Stages 1–5 use the `offline` test stub and keyword search, so they are **deterministic**: the same code always gives the same result, with no keys and no network.
 
@@ -81,4 +81,4 @@ printf '#!/bin/sh\n./ci.sh\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre
 ## Not covered yet
 - No hosted CI (e.g. GitHub Actions). With one, a workflow would run the same `./ci.sh` on every push.
 - No linter or type checker (e.g. ruff, mypy). Add one only if the plan calls for it.
-- The live eval has no pass/fail threshold yet. It prints metrics and saves them in `eval_runs/` for you to compare.
+- The live stage refuses the offline stub (`doctor --require-real`) and runs `eval --strict`, which fails if **any** golden item fails or the question set is empty. With a real model, a strict gate can fail on one hard item: fix the item or the system, don't loosen the gate to pass.

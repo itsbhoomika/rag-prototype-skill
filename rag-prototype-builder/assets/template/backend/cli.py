@@ -1,9 +1,11 @@
 """Command line.
 
-    python -m backend.cli doctor                         # check providers and keys
+    python -m backend.cli doctor [--require-real]        # check providers and keys
     python -m backend.cli ingest [data_dir]              # build the index
     python -m backend.cli ask "question" --user alice    # ask as a user
-    python -m backend.cli eval [--judge] [--label name]  # run data/questions.jsonl
+    python -m backend.cli eval [--judge] [--label name] [--strict]
+                                                         # run data/questions.jsonl; --strict exits 1
+                                                         # if any item fails or the set is empty
 """
 from __future__ import annotations
 
@@ -17,11 +19,14 @@ from .config import Settings
 from .providers import LLM, REQUIRED_ENV, Embedder
 
 
-def doctor() -> int:
+def doctor(require_real: bool = False) -> int:
     s = Settings.from_env()
     print(f"LLM_PROVIDER={s.llm_provider}  EMBED_PROVIDER={s.embed_provider}")
     if s.llm_provider == "offline":
         print("  WARNING: offline is a test stub, not a real model.")
+        if require_real:
+            print("FAILED: a live check needs a real model. Set LLM_PROVIDER and its key in .env.")
+            return 1
     for name in sorted({k for v in REQUIRED_ENV.values() for k in v}):
         print(f"  {name}: {'set' if os.getenv(name) else 'not set'}")  # never print values
     ok = True
@@ -49,7 +54,8 @@ def doctor() -> int:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m backend.cli")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("doctor")
+    pd = sub.add_parser("doctor")
+    pd.add_argument("--require-real", action="store_true", help="fail if LLM_PROVIDER is the offline stub")
     pi = sub.add_parser("ingest")
     pi.add_argument("data_dir", nargs="?")
     pa = sub.add_parser("ask")
@@ -59,10 +65,11 @@ def main(argv: list[str] | None = None) -> int:
     pe.add_argument("questions", nargs="?", default="data/questions.jsonl")
     pe.add_argument("--judge", action="store_true")
     pe.add_argument("--label", default="")
+    pe.add_argument("--strict", action="store_true", help="exit 1 if any item fails or there are no items")
     args = p.parse_args(argv)
 
     if args.cmd == "doctor":
-        return doctor()
+        return doctor(args.require_real)
 
     from .pipeline import RAG
 
@@ -79,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "eval":
         from .evaluate import run
 
-        run(args.questions, judge=args.judge, label=args.label)
+        summary = run(args.questions, judge=args.judge, label=args.label)
+        if args.strict and (summary["n"] == 0 or summary["n_failed"] > 0):
+            why = "no golden questions" if summary["n"] == 0 else f"{summary['n_failed']} of {summary['n']} items failed"
+            print(f"STRICT EVAL FAILED: {why}")
+            return 1
     return 0
 
 

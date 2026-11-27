@@ -31,6 +31,12 @@
 | Good `hit@k`, weak `mrr` | Ranking problem | Consider reranking (M5), measure |
 | Regression stage fails after a change | A metric dropped | Find which question changed in `eval_runs/`. Fix the cause. Update the baseline only if the drop was intended and explained |
 
+| `FAILED: a live check needs a real model` | `./ci.sh --live` with `LLM_PROVIDER=offline` | Set a real provider and key in `.env` (the owner does this). The stub can't measure quality |
+| `STRICT EVAL FAILED: N of M items failed` | A golden item failed in the live eval | Read the FAIL lines above it. Fix retrieval, chunking or the prompt, or correct a wrong golden item. Don't drop `--strict` |
+| Abstains with `model output had the wrong shape` | The model returned JSON that isn't the answer object | Check the prompt still asks for the JSON object. Try a model that follows formats better |
+| Abstains with `answer has numbers not found in the cited passages` | The answer has a number the cited passages don't contain (often invented, sometimes "5" vs "five") | Inspect the passage. If it's a real support gap, fix retrieval. Never remove the check |
+| Regression shows `skipped: no baseline yet` | First run with owner questions | Commit the new `tests/data_baseline.json` |
+
 ## Skill behaviour
 | Symptom | Fix |
 |---|---|

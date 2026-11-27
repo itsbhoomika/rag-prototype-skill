@@ -68,18 +68,30 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
+def judge_row(row: dict, item: dict, llm) -> None:
+    """Grade an answerable item against expected_answer. An abstention on an answerable
+    question counts as incorrect (no model call), so judge_accuracy is "correct answers out of
+    answerable questions", not "correct out of the ones it chose to answer"."""
+    if not (row["answerable"] and item.get("expected_answer")):
+        return
+    if row["abstained"]:
+        row["judge_correct"] = False
+        return
+    prompt = f"Question: {item['question']}\nExpected: {item['expected_answer']}\nSystem: {row['answer']}"
+    verdict = parse_output(llm.complete(JUDGE_SYSTEM, prompt))
+    if not isinstance(verdict, dict) or not isinstance(verdict.get("correct"), bool):
+        raise RuntimeError(f"judge returned unparseable output for {item.get('id')}")
+    row["judge_correct"] = verdict["correct"]
+
+
 def run(questions_path: str, judge: bool = False, label: str = "") -> dict:
     items = [json.loads(l) for l in Path(questions_path).read_text().splitlines() if l.strip()]
     rag = RAG()
     rows = []
     for item in items:
         row = score_item(item, rag.ask(item["question"], item.get("user_id", "admin")))
-        if judge and item.get("expected_answer") and row["answerable"] and not row["abstained"]:
-            prompt = f"Question: {item['question']}\nExpected: {item['expected_answer']}\nSystem: {row['answer']}"
-            verdict = parse_output(rag.llm.complete(JUDGE_SYSTEM, prompt))
-            if verdict is None:
-                raise RuntimeError(f"judge returned unparseable output for {item.get('id')}")
-            row["judge_correct"] = bool(verdict.get("correct"))
+        if judge:
+            judge_row(row, item, rag.llm)
         rows.append(row)
 
     summary = summarize(rows)
@@ -107,4 +119,5 @@ def run(questions_path: str, judge: bool = False, label: str = "") -> dict:
                 "answered unanswerable" if not r["answerable"] else "judge: incorrect")
         print(f"  FAIL {r['id']}: {kind} | {r['question'][:60]}")
     print(f"{summary['n']} items: one item = {100 / max(summary['n'], 1):.0f} points on a rate.")
+    summary["n_failed"] = len(fails)
     return summary

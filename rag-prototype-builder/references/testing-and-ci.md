@@ -1,5 +1,10 @@
 # Testing and CI
 
+## Fixtures vs the owner's data
+- `tests/fixtures/` holds 4 fictional documents, 3 users and 11 questions. Unit, API and fixture-regression tests use only these, so they stay deterministic and pass whatever the owner puts in `data/`.
+- `data/` is the owner's. It is measured by `backend.cli eval` and by the owner-data regression gate.
+- Never edit fixtures to make a test pass. Add an owner question instead.
+
 ## `./ci.sh` stages (stops at the first failure)
 | Stage | Checks | Cost |
 |---|---|---|
@@ -7,8 +12,8 @@
 | 2. Static checks | syntax, no key-looking strings, `.env` not tracked, no `innerHTML =`, no CDN | free |
 | 3. Unit tests | ingestion, chunking, authorization, guard, injection escaping, failures raise | free |
 | 4. API tests | response shape, 403, 422 for extra fields, 502 on provider failure, frontend escaped | free |
-| 5. Regression | golden set scores at least the baseline | free |
-| 6. Live (`--live`) | `doctor` + ingest + eval with real providers | API calls |
+| 5. Regression | fixture golden set scores at least `regression_baseline.json`; once `data/questions.jsonl` has items, the owner's set must score at least `data_baseline.json` (the first run saves it and shows as skipped) | free |
+| 6. Live (`--live`) | `doctor --require-real` (refuses the stub) + ingest + `eval --strict` (fails on any failed item) | API calls |
 
 Also run `python scripts/check_rules.py PROJECT_DIR` (from the skill) after each milestone. It checks the rules that tests may not cover.
 

@@ -4,7 +4,7 @@ Automated (run on every change, no keys):
 
 | Test | Given | When | Then | Where |
 |---|---|---|---|---|
-| Template works as shipped | an empty temp folder | `scaffold.py`, install, `./ci.sh` | all 5 CI stages pass (26 tests), rule check passes | `dev/scripts/test_template.sh` |
+| Template works as shipped | an empty temp folder | `scaffold.py`, install, `./ci.sh` | all 5 CI stages pass (37 tests), rule check passes, `--live` refuses the stub, and `--no-sample` also passes | `dev/scripts/test_template.sh` |
 | Scaffold is safe | a folder with a user file | `scaffold.py` | refuses, user file untouched, nothing copied | `dev/tests/test_skill_scripts.py` |
 | Rule checker catches violations | a scaffolded project with one planted violation each | `check_rules.py` | flags innerHTML, client filters, silent fallback, removed guard, planted key, lost untrusted rule, unapproved plan | `dev/tests/test_skill_scripts.py` |
 | Skill follows the guide | the skill folder | `validate_skill.py` | every check passes | `dev/tests/test_skill_scripts.py` |

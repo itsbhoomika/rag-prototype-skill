@@ -3,7 +3,7 @@
 ## The model
 - The client sends **only** `user_id` (and the question).
 - The server looks up the user in `data/users.json` (`backend/auth.py`). It turns the user's allowed folders into retrieval filters.
-- The filters are applied **before scoring** (`search.allowed_mask`).
+- The filters are applied inside each ranking, before any top-k cut (`search.allowed_mask`). See `retrieval.md` for exactly what this guarantees.
 - The request model forbids extra fields (`extra="forbid"`), so `{"user_id": "bob", "filters": {"folder": ["*"]}}` gets a 422.
 - `/api/users` returns ids and roles only. It never returns the folders.
 
@@ -16,7 +16,7 @@
 | Forbidden-only match for a question | relevance gate abstains: "no passages you can access matched the question" |
 
 ## Prototype limit (always state it)
-The user id is taken on trust from the request, because there is no login. In production it comes from a verified session or token (SSO, JWT), and `filters_for()` stays the same. For a database-backed variant, add row-level security as a second layer (see `nextjs-supabase-variant.md`).
+**This is simulated identity, not access control against a real attacker.** The user id is taken on trust from the request, because there is no login: anyone who can reach the API can claim to be any user. The UI labels the picker as a simulation. Say this in the plan, the README and the final report. In production it comes from a verified session or token (SSO, JWT), and `filters_for()` stays the same. For a database-backed variant, add row-level security as a second layer (see `nextjs-supabase-variant.md`).
 
 ## Tests every brief needs (write them first, in M2)
 1. For each user: a question that matches only a forbidden folder returns no passage from that folder, even though the query matches it exactly.

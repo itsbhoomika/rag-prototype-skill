@@ -7,6 +7,8 @@ Endpoints
 
 Authorization: the request carries only user_id. Allowed folders are looked up on the
 server (backend/auth.py). There is deliberately no way to send filters from the client.
+Identity is SIMULATED: there is no login, so the caller chooses user_id. Production takes it
+from a verified session (SSO/JWT) and keeps everything else the same.
 """
 from __future__ import annotations
 

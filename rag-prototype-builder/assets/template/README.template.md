@@ -8,10 +8,11 @@ PLAN.md                         the project plan, filled in by the project-manag
 .claude/agents/project-manager.md
 backend/                        Python: ingest, search, generate, auth, pipeline, eval, API, CLI
 frontend/                       index.html + app.js (served by the backend)
-data/sample/                    fictional sample documents
-data/users.json                 fictional users and the folders they may see
-data/questions.jsonl            eval questions
+data/sample/                    your documents (one top-level folder per access group)
+data/users.json                 users and the folders they may see (identity is simulated: no login)
+data/questions.jsonl            your golden eval questions
 tests/                          tests that run without API keys
+tests/fixtures/                 fixed fictional data the tests use, so they pass whatever is in data/
 ```
 
 ## Run it

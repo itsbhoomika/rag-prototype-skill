@@ -19,7 +19,7 @@ DEFAULT_LLM = {
     "anthropic": "claude-opus-5-5",
     "openai": "gpt-4.1-mini",        # set LLM_MODEL to whatever the key allows
     "azure": "",                      # uses AZURE_OPENAI_DEPLOYMENT
-    "gemini": "gemini-2.5-flash",     # verify at session start
+    "gemini": "gemini-3.5-flash",     # 2.5-flash is deprecated; verify at session start
     "ollama": "llama3.2:3b",
     "offline": "extractive-stub",
 }
